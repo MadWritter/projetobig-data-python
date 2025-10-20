@@ -1,0 +1,4 @@
+pandas # Processamento de dados
+openpyxl # Para ler do Excel
+mysql-connector-python # Pra acessar o MySQL
+python-dotenv # Carrega os dados de conexão do .env
