@@ -5,14 +5,3 @@ services:
     volumes:
       - .:/app
     command: python main.py
-    depends_on:
-      - mysql
-
-  mysql:
-    image: mysql:8.0
-    container_name: banco_mysql
-    env_file: .env
-    ports:
-      - "3307:3306" # 3307 pra evitar conflito de portas se o host tiver uma instância de mysql rodando na porta padrão
-    volumes:
-      - ./init:/docker-entrypoint-initdb.d

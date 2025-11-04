@@ -1,15 +1,15 @@
 import pandas as pd
-import mysql.connector
 from time import sleep
 
-def processar_dados_faturamento(conn):
-    cursor = conn.cursor()
-    # Ler Excel
+def processar_dados_faturamento():
+    # Caminho do arquivo Excel
     excel_path = "dados/venda-itens-faturamento.xlsx"
+
+    # Ler Excel
     df_excel = pd.read_excel(excel_path)
 
     # Selecionar apenas as colunas relevantes e renomear
-    df_excel_sql = df_excel[[
+    df_excel_csv = df_excel[[
         'Pedido', 'Nome', 'Fantasia', 'Data', 'Descrição', 'SubCategoria',
         'Segmento', 'Natureza', 'Faturado', 'Valor Unitario', 'Valor Total',
         'ValorCorte', 'ValorLiquido', 'Tipo Pg', 'Roteiro', 'Situação'
@@ -32,42 +32,18 @@ def processar_dados_faturamento(conn):
         'Situação': 'situacao'
     })
 
-    # Inserir dados do Excel
-    for _, row in df_excel_sql.iterrows():
-        cursor.execute("""
-            INSERT INTO venda_itens_faturamento (
-                pedido, nome, fantasia, data, descricao, sub_categoria, segmento, natureza,
-                faturado, valor_unitario, valor_total, valor_corte, valor_liquido,
-                tipo_pg, roteiro, situacao
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE
-                nome=VALUES(nome), fantasia=VALUES(fantasia), data=VALUES(data),
-                descricao=VALUES(descricao), sub_categoria=VALUES(sub_categoria),
-                segmento=VALUES(segmento), natureza=VALUES(natureza),
-                faturado=VALUES(faturado), valor_unitario=VALUES(valor_unitario),
-                valor_total=VALUES(valor_total), valor_corte=VALUES(valor_corte),
-                valor_liquido=VALUES(valor_liquido), tipo_pg=VALUES(tipo_pg),
-                roteiro=VALUES(roteiro), situacao=VALUES(situacao)
-        """, (
-            int(row['pedido']),
-            row['nome'],
-            row['fantasia'],
-            pd.to_datetime(row['data']).date(),
-            row['descricao'],
-            row['sub_categoria'],
-            row['segmento'],
-            row['natureza'],
-            int(row['faturado']),
-            float(row['valor_unitario']),
-            float(row['valor_total']),
-            float(row['valor_corte']),
-            float(row['valor_liquido']),
-            row['tipo_pg'],
-            row['roteiro'],
-            row['situacao']
-        ))
+    # Converter tipos de dados, se necessário
+    df_excel_csv['pedido'] = df_excel_csv['pedido'].astype(int)
+    df_excel_csv['faturado'] = df_excel_csv['faturado'].astype(int)
+    df_excel_csv['data'] = pd.to_datetime(df_excel_csv['data']).dt.date
 
-    # Commit
-    conn.commit()
-    cursor.close()
-    print("Dados do Excel inseridos com sucesso!")
+    for col in ['valor_unitario', 'valor_total', 'valor_corte', 'valor_liquido']:
+        df_excel_csv[col] = df_excel_csv[col].astype(float)
+
+    # Caminho do CSV de saída
+    csv_path = "dados/venda-itens-faturamento-processado.csv"
+
+    # Exportar para CSV
+    df_excel_csv.to_csv(csv_path, index=False, sep=';', encoding='utf-8-sig')
+
+    print(f"Arquivo CSV gerado com sucesso em: {csv_path}")
